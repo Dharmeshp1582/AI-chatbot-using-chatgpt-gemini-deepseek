@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import TextareaAutosize from "react-textarea-autosize"
 
 const Control = ({onSend
 }) => {
@@ -27,10 +28,12 @@ const Control = ({onSend
   return (
     <div className="flex items-center gap-2 w-full">
       <div className="flex-grow px-4 py-2 rounded-2xl bg-white">
-        <textarea
+        <TextareaAutosize
           className="w-full h-full border-none outline-none resize-none bg-white"
           placeholder="Message Ai chatbot"
           value={content} 
+          minRows={1}
+          maxRows={4}
           onChange={handleContentChange}
           onKeyDown={handleEnterPress}
         />

@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import Chat from "./components/chat/Chat";
 import Control from "./components/controls/Control";
-import { Assistant } from "./assistant/googleai";
+// import { Assistant } from "./assistant/googleai";
+
+import { Assistant } from "./assistant/openai";
+import { Loader } from "./components/loader/Loader";
 
 const App = () => {
   const assistant = new Assistant();
   const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const addMessage = (message) => {
     setMessages((prevMessages) => [...prevMessages, message]);
@@ -25,32 +29,51 @@ const App = () => {
   //   }
   // };
 
-
+  // updated handleContentSend with history and loader
   const handleContentSend = async (content) => {
-  addMessage({ content, role: "user" });
-  try {
-    const result = await assistant.sendMessage(content); // updated
-    addMessage({ content: result, role: "assistant" });
-  } catch (error) {
-    addMessage({
-      content: "Sorry, I couldn't process your request.",
-      role: "system",
-    });
-    console.log(error)
-  }
-};
+    // avoid multiple API calls while loading
+    if (isLoading) return;
 
+    // add user message first
+    const updatedMessages = [...messages, { content, role: "user" }];
+    setMessages(updatedMessages);
+    setIsLoading(true);
+
+    try {
+      // pass updated messages so chat history is preserved
+      const result = await assistant.chat(content, updatedMessages);
+      addMessage({ content: result, role: "assistant" });
+    } catch (error) {
+      // show error message as a system message
+      addMessage({
+        content:
+          error.message ||
+          "Sorry, I couldn't process your request.",
+        role: "system",
+      });
+      console.log(error);
+    } finally {
+      // stop loader
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center gap-4 h-screen p-4">
+      {/* loader */}
+      {isLoading && <Loader />}
+
       <header className="text-center">
         <img src="/chat-bot.png" alt="" className="w-16 h-16" />
         <h2 className="m-0">AI Chatbot</h2>
       </header>
+
       <div className="flex-grow w-full bg-white rounded-2xl overflow-y-auto">
         <Chat messages={messages} />
       </div>
-      <Control onSend={handleContentSend} />
+
+      {/* disable send if loading */}
+      <Control onSend={handleContentSend} disabled={isLoading} />
     </div>
   );
 };
